@@ -1,6 +1,7 @@
 package com.oyx.redis.controller;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.oyx.redis.dto.LoginFormDTO;
 import com.oyx.redis.dto.Result;
 import com.oyx.redis.bean.UserInfo;
@@ -47,7 +48,7 @@ public class UserController {
      * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
      */
     @PostMapping("/login")
-    public Result login(@RequestBody LoginFormDTO loginForm, HttpSession session){
+    public Result login(@RequestBody LoginFormDTO loginForm, HttpSession session) throws JsonProcessingException {
 
         // TODO 实现登录功能
         return userService.login(loginForm,session);
