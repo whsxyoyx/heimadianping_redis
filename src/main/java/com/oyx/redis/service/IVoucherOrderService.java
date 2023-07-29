@@ -2,6 +2,7 @@ package com.oyx.redis.service;
 
 import com.oyx.redis.bean.VoucherOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.oyx.redis.dto.Result;
 
 /**
  * <p>
@@ -13,4 +14,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IVoucherOrderService extends IService<VoucherOrder> {
 
+    Result seckillVoucher(Long voucherId);
+
+    void createVoucherOrder(VoucherOrder voucherOrder);
 }

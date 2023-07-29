@@ -16,15 +16,22 @@ import com.oyx.redis.dto.UserDTO;
 import com.oyx.redis.mapper.UserMapper;
 import com.oyx.redis.service.IUserService;
 import com.oyx.redis.utils.RegexUtils;
+import com.oyx.redis.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpSession;
 import javax.swing.text.FieldView;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -129,6 +136,79 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // 8.返回token
         return Result.ok(token);*/
+    }
+
+    /**
+     * 实现用户签到功能
+     * @return
+     */
+    @Override
+    public Result sign() {
+        //1.获取当前登录的用户
+        UserDTO user = UserHolder.getUser();
+        if(user == null){
+            return Result.fail("用户未登录");
+        }
+        Long userId = user.getId();
+        //2.获取日期
+        LocalDateTime now = LocalDateTime.now();
+        //3.拼接key
+        String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMMdd"));
+        String key = USER_SIGN_KEY + userId + keySuffix;
+        //4.获取当前月的天数
+        int dayOfMonth = now.getDayOfMonth() - 1;
+        //5.向redis写入数据
+        redisTemplate.opsForValue().setBit(key, dayOfMonth, true);
+        return Result.ok();
+    }
+
+    /**
+     * 获取用户连续签到天数
+     */
+    @Override
+    public Result signCount() {
+        //1.获取当前登录的用户
+        UserDTO user = UserHolder.getUser();
+        if(user == null){
+            return Result.fail("用户未登录");
+        }
+        Long userId = user.getId();
+        //2.获取日期
+        LocalDateTime now = LocalDateTime.now();
+        //3.拼接key
+        String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMMdd"));
+        String key = USER_SIGN_KEY + userId + keySuffix;
+        //4.获取当前月的天数
+        int dayOfMonth = now.getDayOfMonth();
+        //5.获取本月截止今天为止的所有签到记录,返回一个十进制数
+        List<Long> results = redisTemplate.opsForValue().
+                bitField(key, BitFieldSubCommands.create()
+                        .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)).valueAt(0));
+        if(results == null || results.isEmpty()){
+            //没有任何签到结果
+            return Result.ok();
+        }
+
+        Long aLong = results.get(0);
+        if(aLong == null || aLong == 0){
+            return Result.ok();
+        }
+        int count = 0;
+        //6.循环便利
+        while (true){
+            //6.1让这个数与1进行位运算,得到数字的最后一个bit位
+            //6.2判断数是否为0
+            if((aLong & 1) == 0){
+                //6.3为0
+                break;
+            }else{
+                //6.4不为0,说明已经签到,计数器+1
+                count++;
+            }
+            //6.5数字右移一位,抛弃最后一个bit位,继续下一个bit位
+            aLong >>>=1;
+        }
+        return Result.ok(count);
     }
 
     private User createUserWithPhone(String phone) {
