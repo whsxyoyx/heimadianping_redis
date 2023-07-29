@@ -2,6 +2,7 @@ package com.oyx.redis.service;
 
 import com.oyx.redis.bean.Shop;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.oyx.redis.dto.Result;
 
 /**
  * <p>
@@ -13,4 +14,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IShopService extends IService<Shop> {
 
+    Result queryById(Long id);
+
+
+    Result updateShop(Shop shop);
+
+    Result queryShopByType(Integer typeId, Integer current, Double x, Double y);
 }
